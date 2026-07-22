@@ -8,15 +8,13 @@ import {
   FiStar,
   FiCalendar,
   FiClock,
-  FiCheckCircle,
   FiAlertTriangle,
   FiX,
   FiSave
 } from 'react-icons/fi';
 import { BsPinAngle } from 'react-icons/bs';
 import { formatDate, getDueDateInfo, copyToClipboard } from '../utils/helpers';
-
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 export function TaskCard({
   task,
@@ -45,7 +43,6 @@ export function TaskCard({
     }
   }, [isEditing]);
 
-  // Highlight search text helper
   const renderHighlightedTitle = (text, query) => {
     if (!query || !query.trim()) return text;
     const parts = text.split(new RegExp(`(${query.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')})`, 'gi'));
@@ -55,7 +52,7 @@ export function TaskCard({
           part.toLowerCase() === query.toLowerCase() ? (
             <mark
               key={index}
-              className="bg-amber-300 dark:bg-amber-500/60 text-slate-900 dark:text-white px-0.5 rounded font-semibold"
+              className="bg-amber-300 dark:bg-amber-500/60 text-slate-900 dark:text-white px-0.5 rounded font-bold"
             >
               {part}
             </mark>
@@ -100,17 +97,16 @@ export function TaskCard({
   const handleCopy = async () => {
     const success = await copyToClipboard(task.title);
     if (success && onShowToast) {
-      onShowToast('Task title copied to clipboard!');
+      onShowToast('Task copied to clipboard!');
     }
   };
 
   const dueInfo = getDueDateInfo(task.dueDate);
 
-  // Badge priority styling
   const priorityStyles = {
-    High: 'bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800',
-    Medium: 'bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
-    Low: 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+    High: 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800',
+    Medium: 'bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800',
+    Low: 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
   };
 
   return (
@@ -121,13 +117,13 @@ export function TaskCard({
       exit={{ opacity: 0, scale: 0.95 }}
       whileHover={{ y: -2 }}
       transition={{ duration: 0.2 }}
-      className={`group relative glass-card p-4 sm:p-5 rounded-3xl border transition-all duration-200 shadow-sm ${
+      className={`group relative glass-card p-4 sm:p-5 rounded-3xl border transition-all duration-200 shadow-xs ${
         task.completed
-          ? 'bg-slate-50/60 dark:bg-slate-900/40 opacity-80 border-slate-200/50 dark:border-slate-800/60'
+          ? 'bg-emerald-500/5 dark:bg-emerald-950/15 border-emerald-500/20 dark:border-emerald-900/30'
           : isSelected
-          ? 'ring-2 ring-indigo-500 border-indigo-500/50 bg-indigo-50/30 dark:bg-indigo-950/20'
+          ? 'ring-2 ring-indigo-500 border-indigo-500/50 bg-indigo-50/40 dark:bg-indigo-950/30'
           : task.pinned
-          ? 'border-indigo-400/50 dark:border-indigo-600/50 shadow-md'
+          ? 'border-indigo-400/60 dark:border-indigo-600/60 shadow-md'
           : 'border-slate-200/80 dark:border-slate-800'
       }`}
     >
@@ -158,7 +154,7 @@ export function TaskCard({
           onClick={() => onToggleComplete(task.id)}
           className={`mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
             task.completed
-              ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
+              ? 'bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/30'
               : 'border-slate-300 dark:border-slate-600 hover:border-emerald-500 dark:hover:border-emerald-400'
           }`}
           aria-label={task.completed ? 'Mark task pending' : 'Mark task completed'}
@@ -182,32 +178,29 @@ export function TaskCard({
               />
               
               <div className="flex flex-wrap items-center gap-2 text-xs">
-                {/* Priority Selector */}
                 <select
                   value={editPriority}
                   onChange={(e) => setEditPriority(e.target.value)}
-                  className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold focus:outline-none border border-slate-300 dark:border-slate-700"
+                  className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-semibold focus:outline-none border border-slate-300 dark:border-slate-700"
                 >
                   <option value="High">High Priority</option>
                   <option value="Medium">Medium Priority</option>
                   <option value="Low">Low Priority</option>
                 </select>
 
-                {/* Category Input */}
                 <input
                   type="text"
                   value={editCategory}
                   onChange={(e) => setEditCategory(e.target.value)}
                   placeholder="Category"
-                  className="px-2 py-1 rounded-lg glass-input text-slate-700 dark:text-slate-200 font-semibold focus:outline-none border border-slate-300 dark:border-slate-700 w-28"
+                  className="px-2.5 py-1.5 rounded-lg glass-input text-slate-800 dark:text-slate-100 font-semibold focus:outline-none border border-slate-300 dark:border-slate-700 w-28"
                 />
 
-                {/* Due Date */}
                 <input
                   type="date"
                   value={editDueDate}
                   onChange={(e) => setEditDueDate(e.target.value)}
-                  className="px-2 py-1 rounded-lg glass-input text-slate-700 dark:text-slate-200 font-semibold focus:outline-none border border-slate-300 dark:border-slate-700"
+                  className="px-2.5 py-1.5 rounded-lg glass-input text-slate-800 dark:text-slate-100 font-semibold focus:outline-none border border-slate-300 dark:border-slate-700"
                 />
               </div>
 
@@ -215,7 +208,7 @@ export function TaskCard({
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center gap-1"
                 >
                   <FiX className="w-3.5 h-3.5" />
                   <span>Cancel (Esc)</span>
@@ -233,28 +226,28 @@ export function TaskCard({
           ) : (
             /* Normal Display Mode */
             <div>
-              {/* Task Title */}
+              {/* Task Title with High Legibility */}
               <h3
                 onClick={() => onToggleComplete(task.id)}
-                className={`text-sm sm:text-base font-semibold leading-snug cursor-pointer transition-all ${
+                className={`text-sm sm:text-base font-semibold leading-snug cursor-pointer transition-colors ${
                   task.completed
-                    ? 'line-through text-slate-400 dark:text-slate-500 font-normal'
-                    : 'text-slate-800 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400'
+                    ? 'line-through text-slate-500 dark:text-slate-400 font-medium'
+                    : 'text-slate-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400'
                 }`}
               >
                 {renderHighlightedTitle(task.title, searchQuery)}
               </h3>
 
-              {/* Task Metadata Badges & Timestamps */}
+              {/* Task Metadata Badges */}
               <div className="flex flex-wrap items-center gap-2 mt-2.5 text-xs">
                 {/* Category Badge */}
-                <span className="px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 font-bold border border-slate-200/60 dark:border-slate-700/60">
+                <span className="px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold border border-slate-200/60 dark:border-slate-700/60">
                   #{task.category}
                 </span>
 
                 {/* Priority Badge */}
                 <span
-                  className={`px-2 py-0.5 rounded-md font-bold text-[11px] border ${
+                  className={`px-2 py-0.5 rounded-md font-extrabold text-[11px] border ${
                     priorityStyles[task.priority] || priorityStyles.Medium
                   }`}
                 >
@@ -266,10 +259,10 @@ export function TaskCard({
                   <span
                     className={`px-2 py-0.5 rounded-md font-semibold text-[11px] flex items-center gap-1 border ${
                       dueInfo.isOverdue && !task.completed
-                        ? 'bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border-rose-300 dark:border-rose-800 animate-pulse'
+                        ? 'bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 border-rose-300 dark:border-rose-800 animate-pulse font-bold'
                         : dueInfo.isDueToday && !task.completed
-                        ? 'bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200/50 dark:border-slate-700/50'
+                        ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800 font-bold'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200/50 dark:border-slate-700/50'
                     }`}
                   >
                     {dueInfo.isOverdue && !task.completed ? (
@@ -285,7 +278,7 @@ export function TaskCard({
                 )}
 
                 {/* Creation Timestamp */}
-                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1 ml-auto">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1 ml-auto">
                   <FiClock className="w-3 h-3" />
                   <span>{formatDate(task.createdAt)}</span>
                 </span>
@@ -294,16 +287,15 @@ export function TaskCard({
           )}
         </div>
 
-        {/* Card Action Buttons Bar */}
+        {/* Action Buttons Floating Toolbar */}
         {!isEditing && (
-          <div className="flex items-center gap-1 opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-            {/* Pin Toggle */}
+          <div className="flex items-center gap-1 opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 dark:bg-slate-800/90 p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50 shadow-xs">
             <button
               onClick={() => onTogglePin(task.id)}
               className={`p-1.5 rounded-lg transition-colors ${
                 task.pinned
                   ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950'
-                  : 'text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  : 'text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700'
               }`}
               title={task.pinned ? 'Unpin Task' : 'Pin Task to Top'}
               aria-label={task.pinned ? 'Unpin task' : 'Pin task'}
@@ -311,13 +303,12 @@ export function TaskCard({
               <BsPinAngle className="w-4 h-4" />
             </button>
 
-            {/* Favorite Toggle */}
             <button
               onClick={() => onToggleFavorite(task.id)}
               className={`p-1.5 rounded-lg transition-colors ${
                 task.favorite
                   ? 'text-amber-500 fill-amber-500'
-                  : 'text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  : 'text-slate-500 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-700'
               }`}
               title={task.favorite ? 'Remove Favorite' : 'Mark Favorite'}
               aria-label={task.favorite ? 'Unfavorite task' : 'Favorite task'}
@@ -325,40 +316,36 @@ export function TaskCard({
               <FiStar className="w-4 h-4" />
             </button>
 
-            {/* Edit */}
             <button
               onClick={() => setIsEditing(true)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               title="Edit Task"
               aria-label="Edit task"
             >
               <FiEdit2 className="w-4 h-4" />
             </button>
 
-            {/* Duplicate */}
             <button
               onClick={() => onDuplicate(task.id)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               title="Duplicate Task"
               aria-label="Duplicate task"
             >
               <FiCornerDownRight className="w-4 h-4" />
             </button>
 
-            {/* Copy Clipboard */}
             <button
               onClick={handleCopy}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               title="Copy to Clipboard"
               aria-label="Copy task title to clipboard"
             >
               <FiCopy className="w-4 h-4" />
             </button>
 
-            {/* Delete */}
             <button
               onClick={() => onDeleteRequest(task.id)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors"
               title="Delete Task"
               aria-label="Delete task"
             >
