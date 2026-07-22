@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const FILTERS = [
+const BASE_FILTERS = [
   { id: 'All', label: 'All' },
   { id: 'Pending', label: 'Pending' },
   { id: 'Completed', label: 'Completed' },
@@ -14,12 +14,16 @@ const FILTERS = [
   { id: 'Overdue', label: 'Overdue' }
 ];
 
-export function FilterTabs({ activeFilter, setActiveFilter, tasks }) {
-  // Count items per filter
+export function FilterTabs({ activeFilter, setActiveFilter, tasks, dynamicCategories = [] }) {
   const getFilterCount = (filterId) => {
     const todayStr = new Date().toISOString().slice(0, 10);
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
+
+    if (filterId.startsWith('cat:')) {
+      const catName = filterId.replace('cat:', '');
+      return tasks.filter((t) => t.category === catName).length;
+    }
 
     switch (filterId) {
       case 'All': return tasks.length;
@@ -42,10 +46,18 @@ export function FilterTabs({ activeFilter, setActiveFilter, tasks }) {
     }
   };
 
+  // Build full list of filters including dynamic categories
+  const allFilters = [
+    ...BASE_FILTERS,
+    ...dynamicCategories
+      .filter((c) => !['Work', 'Personal', 'Shopping', 'Health', 'Other'].includes(c))
+      .map((c) => ({ id: `cat:${c}`, label: `#${c}` }))
+  ];
+
   return (
     <div className="w-full mb-6 overflow-x-auto pb-2 scrollbar-none">
       <div className="flex items-center gap-2 min-w-max">
-        {FILTERS.map((tab) => {
+        {allFilters.map((tab) => {
           const isActive = activeFilter === tab.id;
           const count = getFilterCount(tab.id);
 

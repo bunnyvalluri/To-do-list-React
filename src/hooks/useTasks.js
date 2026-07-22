@@ -14,7 +14,12 @@ const DEFAULT_TASKS = [
     dueDate: new Date().toISOString().slice(0, 10),
     createdAt: new Date(Date.now() - 3600000).toISOString(),
     completedAt: null,
-    order: 1
+    order: 1,
+    subtasks: [
+      { id: 'sub-1', title: 'Verify responsive layout', completed: true },
+      { id: 'sub-2', title: 'Test LocalStorage persistence', completed: true },
+      { id: 'sub-3', title: 'Deploy live project', completed: false }
+    ]
   },
   {
     id: 'task-demo-2',
@@ -27,11 +32,12 @@ const DEFAULT_TASKS = [
     dueDate: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
     createdAt: new Date(Date.now() - 7200000).toISOString(),
     completedAt: null,
-    order: 2
+    order: 2,
+    subtasks: []
   },
   {
     id: 'task-demo-3',
-    title: '⚡ Try keyboard shortcuts (Enter to save, Esc to cancel)',
+    title: '⚡ Try drag & drop reordering and keyboard shortcuts',
     completed: true,
     priority: 'Low',
     category: 'Work',
@@ -40,7 +46,8 @@ const DEFAULT_TASKS = [
     dueDate: null,
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     completedAt: new Date(Date.now() - 1800000).toISOString(),
-    order: 3
+    order: 3,
+    subtasks: []
   }
 ];
 
@@ -48,9 +55,9 @@ export function useTasks() {
   const [tasks, setTasks] = useLocalStorage('taskflow_tasks', DEFAULT_TASKS);
   const [searchQuery, setSearchQuery] = useLocalStorage('taskflow_search', '');
   const [activeFilter, setActiveFilter] = useLocalStorage('taskflow_filter', 'All');
-  const [sortOption, setSortOption] = useLocalStorage('taskflow_sort', 'Newest First');
+  const [sortOption, setSortOption] = useLocalStorage('taskflow_sort', 'Custom Drag');
   const [selectedTaskIds, setSelectedTaskIds] = useState([]);
-  const [lastDeletedTask, setLastDeletedTask] = useState(null); // For Undo action
+  const [lastDeletedTask, setLastDeletedTask] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
   const showToast = useCallback((msg, action = null) => {
@@ -68,13 +75,14 @@ export function useTasks() {
       title: title.trim(),
       completed: false,
       priority,
-      category,
+      category: category.trim() || 'Personal',
       pinned: false,
       favorite: false,
       dueDate: dueDate || null,
       createdAt: new Date().toISOString(),
       completedAt: null,
-      order: Date.now()
+      order: 0,
+      subtasks: []
     };
 
     setTasks((prev) => [newTask, ...prev]);
@@ -90,7 +98,8 @@ export function useTasks() {
           return {
             ...task,
             ...updatedFields,
-            title: updatedFields.title ? updatedFields.title.trim() : task.title
+            title: updatedFields.title ? updatedFields.title.trim() : task.title,
+            category: updatedFields.category ? updatedFields.category.trim() : task.category
           };
         }
         return task;
@@ -102,26 +111,79 @@ export function useTasks() {
   // Toggle Completion
   const toggleComplete = useCallback((id) => {
     setTasks((prev) => {
-      let isAllCompleted = false;
       const updated = prev.map((task) => {
         if (task.id === id) {
           const nextCompleted = !task.completed;
           return {
             ...task,
             completed: nextCompleted,
-            completedAt: nextCompleted ? new Date().toISOString() : null
+            completedAt: nextCompleted ? new Date().toISOString() : null,
+            subtasks: (task.subtasks || []).map(s => ({ ...s, completed: nextCompleted }))
           };
         }
         return task;
       });
 
-      // Check if all non-empty tasks are now completed
       if (updated.length > 0 && updated.every(t => t.completed)) {
         triggerConfetti();
       }
 
       return updated;
     });
+  }, [setTasks]);
+
+  // Subtasks CRUD
+  const addSubtask = useCallback((taskId, title) => {
+    if (!title.trim()) return;
+    setTasks((prev) =>
+      prev.map((task) => {
+        if (task.id === taskId) {
+          const newSub = {
+            id: `sub-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+            title: title.trim(),
+            completed: false
+          };
+          return {
+            ...task,
+            subtasks: [...(task.subtasks || []), newSub]
+          };
+        }
+        return task;
+      })
+    );
+  }, [setTasks]);
+
+  const toggleSubtask = useCallback((taskId, subtaskId) => {
+    setTasks((prev) =>
+      prev.map((task) => {
+        if (task.id === taskId) {
+          const updatedSubs = (task.subtasks || []).map((s) =>
+            s.id === subtaskId ? { ...s, completed: !s.completed } : s
+          );
+          const allSubsCompleted = updatedSubs.length > 0 && updatedSubs.every(s => s.completed);
+          return {
+            ...task,
+            subtasks: updatedSubs,
+            completed: allSubsCompleted ? true : task.completed
+          };
+        }
+        return task;
+      })
+    );
+  }, [setTasks]);
+
+  const deleteSubtask = useCallback((taskId, subtaskId) => {
+    setTasks((prev) =>
+      prev.map((task) => {
+        if (task.id === taskId) {
+          return {
+            ...task,
+            subtasks: (task.subtasks || []).filter((s) => s.id !== subtaskId)
+          };
+        }
+        return task;
+      })
+    );
   }, [setTasks]);
 
   // Delete Single Task
@@ -235,27 +297,46 @@ export function useTasks() {
     showToast(`Successfully imported ${importedTasks.length} tasks!`);
   }, [setTasks, showToast]);
 
-  // Reorder Tasks (for Drag and Drop)
-  const reorderTasks = useCallback((newOrderTasks) => {
-    setTasks(newOrderTasks.map((task, index) => ({ ...task, order: index })));
-  }, [setTasks]);
+  // Dynamic Drag and Drop Task Reordering
+  const moveTask = useCallback((draggedId, targetId) => {
+    if (draggedId === targetId) return;
+    setTasks((prev) => {
+      const copy = [...prev];
+      const draggedIdx = copy.findIndex((t) => t.id === draggedId);
+      const targetIdx = copy.findIndex((t) => t.id === targetId);
+      if (draggedIdx === -1 || targetIdx === -1) return prev;
+
+      const [removed] = copy.splice(draggedIdx, 1);
+      copy.splice(targetIdx, 0, removed);
+      return copy;
+    });
+    setSortOption('Custom Drag');
+  }, [setTasks, setSortOption]);
+
+  // Unique Dynamic Categories List
+  const dynamicCategories = useMemo(() => {
+    const defaultCats = ['Work', 'Personal', 'Shopping', 'Health', 'Other'];
+    const taskCats = tasks.map(t => t.category).filter(Boolean);
+    return Array.from(new Set([...defaultCats, ...taskCats]));
+  }, [tasks]);
 
   // Filtered and Sorted Tasks Calculation
   const filteredAndSortedTasks = useMemo(() => {
     let result = [...tasks];
 
-    // 1. Search Query Filter (Case-insensitive)
+    // Search Query Filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter(
         (t) =>
           t.title.toLowerCase().includes(q) ||
-          t.category.toLowerCase().includes(q) ||
-          t.priority.toLowerCase().includes(q)
+          (t.category && t.category.toLowerCase().includes(q)) ||
+          t.priority.toLowerCase().includes(q) ||
+          (t.subtasks || []).some(s => s.title.toLowerCase().includes(q))
       );
     }
 
-    // 2. Filter Tabs
+    // Filter Tabs
     const todayStr = new Date().toISOString().slice(0, 10);
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -298,37 +379,36 @@ export function useTasks() {
         break;
     }
 
-    // 3. Sorting
+    // Sorting
     const priorityWeight = { High: 3, Medium: 2, Low: 1 };
 
-    result.sort((a, b) => {
-      // Pinned tasks always stay at top unless specifically filtered otherwise
-      if (a.pinned !== b.pinned) {
-        return a.pinned ? -1 : 1;
-      }
+    if (sortOption !== 'Custom Drag') {
+      result.sort((a, b) => {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
 
-      switch (sortOption) {
-        case 'Oldest First':
-          return new Date(a.createdAt) - new Date(b.createdAt);
-        case 'Alphabetical A-Z':
-          return a.title.localeCompare(b.title);
-        case 'Alphabetical Z-A':
-          return b.title.localeCompare(a.title);
-        case 'Priority':
-          return priorityWeight[b.priority] - priorityWeight[a.priority];
-        case 'Due Date':
-          if (!a.dueDate) return 1;
-          if (!b.dueDate) return -1;
-          return new Date(a.dueDate) - new Date(b.dueDate);
-        case 'Completed First':
-          return (b.completed ? 1 : 0) - (a.completed ? 1 : 0);
-        case 'Pending First':
-          return (a.completed ? 1 : 0) - (b.completed ? 1 : 0);
-        case 'Newest First':
-        default:
-          return new Date(b.createdAt) - new Date(a.createdAt);
-      }
-    });
+        switch (sortOption) {
+          case 'Oldest First':
+            return new Date(a.createdAt) - new Date(b.createdAt);
+          case 'Alphabetical A-Z':
+            return a.title.localeCompare(b.title);
+          case 'Alphabetical Z-A':
+            return b.title.localeCompare(a.title);
+          case 'Priority':
+            return priorityWeight[b.priority] - priorityWeight[a.priority];
+          case 'Due Date':
+            if (!a.dueDate) return 1;
+            if (!b.dueDate) return -1;
+            return new Date(a.dueDate) - new Date(b.dueDate);
+          case 'Completed First':
+            return (b.completed ? 1 : 0) - (a.completed ? 1 : 0);
+          case 'Pending First':
+            return (a.completed ? 1 : 0) - (b.completed ? 1 : 0);
+          case 'Newest First':
+          default:
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        }
+      });
+    }
 
     return result;
   }, [tasks, searchQuery, activeFilter, sortOption]);
@@ -356,6 +436,7 @@ export function useTasks() {
   return {
     tasks,
     filteredAndSortedTasks,
+    dynamicCategories,
     stats,
     searchQuery,
     setSearchQuery,
@@ -371,6 +452,9 @@ export function useTasks() {
     editTask,
     deleteTask,
     toggleComplete,
+    addSubtask,
+    toggleSubtask,
+    deleteSubtask,
     duplicateTask,
     togglePin,
     toggleFavorite,
@@ -378,7 +462,7 @@ export function useTasks() {
     bulkDelete,
     clearCompleted,
     importTasks,
-    reorderTasks,
+    moveTask,
     undoDelete,
     toastMessage,
     clearToast,

@@ -3,12 +3,13 @@ import { FiPlus, FiX, FiTag, FiAlertCircle, FiFlag, FiCalendar } from 'react-ico
 import { validateTaskInput } from '../utils/validation';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const CATEGORIES = ['Work', 'Personal', 'Shopping', 'Health', 'Other'];
 const PRIORITIES = ['Low', 'Medium', 'High'];
 
-export function TaskInput({ onAddTask, existingTasks }) {
+export function TaskInput({ onAddTask, existingTasks, categories = [] }) {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Personal');
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategory, setCustomCategory] = useState('');
   const [priority, setPriority] = useState('Medium');
   const [dueDate, setDueDate] = useState('');
   const [errorMsg, setErrorMsg] = useState(null);
@@ -35,16 +36,19 @@ export function TaskInput({ onAddTask, existingTasks }) {
       setWarningMsg(validation.warning);
     }
 
+    const finalCategory = isCustomCategory ? customCategory.trim() || 'Personal' : category;
+
     onAddTask({
       title: validation.sanitized,
       priority,
-      category,
+      category: finalCategory,
       dueDate: dueDate || null
     });
 
-    // Reset input fields
     setTitle('');
     setDueDate('');
+    setCustomCategory('');
+    setIsCustomCategory(false);
     setErrorMsg(null);
     setWarningMsg(null);
   };
@@ -52,6 +56,7 @@ export function TaskInput({ onAddTask, existingTasks }) {
   const handleClear = () => {
     setTitle('');
     setDueDate('');
+    setCustomCategory('');
     setErrorMsg(null);
     setWarningMsg(null);
   };
@@ -62,6 +67,8 @@ export function TaskInput({ onAddTask, existingTasks }) {
       handleFormSubmit(e);
     }
   };
+
+  const allCategoryList = Array.from(new Set(['Personal', 'Work', 'Shopping', 'Health', 'Other', ...categories]));
 
   return (
     <div className="w-full mb-6">
@@ -84,13 +91,11 @@ export function TaskInput({ onAddTask, existingTasks }) {
               aria-label="New task input"
             />
 
-            {/* Character Count Counter */}
             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-slate-400 dark:text-slate-500 select-none">
               {title.length}/200
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex items-center gap-2 justify-end">
             {title && (
               <motion.button
@@ -118,7 +123,7 @@ export function TaskInput({ onAddTask, existingTasks }) {
           </div>
         </div>
 
-        {/* Options Row (Category, Priority, Due Date) */}
+        {/* Dynamic Options Bar */}
         <AnimatePresence>
           {(isExpanded || title.length > 0) && (
             <motion.div
@@ -154,20 +159,49 @@ export function TaskInput({ onAddTask, existingTasks }) {
                   })}
                 </div>
 
-                {/* Category Dropdown */}
+                {/* Dynamic Category Selector */}
                 <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/60 px-2.5 py-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
                   <FiTag className="w-3.5 h-3.5 text-slate-400" />
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="bg-transparent text-slate-700 dark:text-slate-200 font-semibold focus:outline-none cursor-pointer"
-                  >
-                    {CATEGORIES.map((c) => (
-                      <option key={c} value={c} className="dark:bg-slate-900 dark:text-slate-100">
-                        {c}
+                  {isCustomCategory ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={customCategory}
+                        onChange={(e) => setCustomCategory(e.target.value)}
+                        placeholder="New category..."
+                        className="bg-transparent text-slate-800 dark:text-slate-100 font-semibold focus:outline-none w-24"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setIsCustomCategory(false)}
+                        className="text-slate-400 hover:text-slate-600"
+                      >
+                        <FiX className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <select
+                      value={category}
+                      onChange={(e) => {
+                        if (e.target.value === '__NEW__') {
+                          setIsCustomCategory(true);
+                        } else {
+                          setCategory(e.target.value);
+                        }
+                      }}
+                      className="bg-transparent text-slate-700 dark:text-slate-200 font-semibold focus:outline-none cursor-pointer"
+                    >
+                      {allCategoryList.map((c) => (
+                        <option key={c} value={c} className="dark:bg-slate-900 dark:text-slate-100">
+                          {c}
+                        </option>
+                      ))}
+                      <option value="__NEW__" className="dark:bg-slate-900 text-indigo-500 font-bold">
+                        + Add Custom Category...
                       </option>
-                    ))}
-                  </select>
+                    </select>
+                  )}
                 </div>
 
                 {/* Due Date Input */}

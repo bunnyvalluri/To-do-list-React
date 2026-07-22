@@ -10,11 +10,13 @@ import {
   FiClock,
   FiAlertTriangle,
   FiX,
-  FiSave
+  FiSave,
+  FiPlus,
+  FiList
 } from 'react-icons/fi';
-import { BsPinAngle } from 'react-icons/bs';
+import { BsPinAngle, BsGripVertical } from 'react-icons/bs';
 import { formatDate, getDueDateInfo, copyToClipboard } from '../utils/helpers';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function TaskCard({
   task,
@@ -27,9 +29,15 @@ export function TaskCard({
   onDuplicate,
   onTogglePin,
   onToggleFavorite,
+  onAddSubtask,
+  onToggleSubtask,
+  onDeleteSubtask,
+  onMoveTask,
   onShowToast
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [showSubtasks, setShowSubtasks] = useState(false);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [editTitle, setEditTitle] = useState(task.title);
   const [editCategory, setEditCategory] = useState(task.category);
   const [editPriority, setEditPriority] = useState(task.priority);
@@ -94,6 +102,13 @@ export function TaskCard({
     }
   };
 
+  const handleAddSubtaskSubmit = (e) => {
+    e.preventDefault();
+    if (!newSubtaskTitle.trim()) return;
+    onAddSubtask(task.id, newSubtaskTitle);
+    setNewSubtaskTitle('');
+  };
+
   const handleCopy = async () => {
     const success = await copyToClipboard(task.title);
     if (success && onShowToast) {
@@ -109,9 +124,28 @@ export function TaskCard({
     Low: 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
   };
 
+  const subtasks = task.subtasks || [];
+  const completedSubsCount = subtasks.filter(s => s.completed).length;
+
   return (
     <motion.div
       layout
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', task.id);
+        e.dataTransfer.effectAllowed = 'move';
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        const draggedId = e.dataTransfer.getData('text/plain');
+        if (draggedId && onMoveTask) {
+          onMoveTask(draggedId, task.id);
+        }
+      }}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -127,6 +161,11 @@ export function TaskCard({
           : 'border-slate-200/80 dark:border-slate-800'
       }`}
     >
+      {/* Drag Grip handle */}
+      <div className="absolute left-1.5 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-60 cursor-grab active:cursor-grabbing text-slate-400 hover:text-indigo-500 transition-opacity">
+        <BsGripVertical className="w-5 h-5" />
+      </div>
+
       {/* Pinned Ribbon Badge */}
       {task.pinned && (
         <div className="absolute -top-2.5 right-6 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-[10px] font-extrabold text-white shadow-xs flex items-center gap-1">
@@ -135,7 +174,7 @@ export function TaskCard({
         </div>
       )}
 
-      <div className="flex items-start gap-3 sm:gap-4">
+      <div className="flex items-start gap-3 sm:gap-4 pl-2">
         {/* Multi-Select Checkbox */}
         <div className="pt-1 flex items-center">
           <input
@@ -226,7 +265,7 @@ export function TaskCard({
           ) : (
             /* Normal Display Mode */
             <div>
-              {/* Task Title with High Legibility */}
+              {/* Task Title */}
               <h3
                 onClick={() => onToggleComplete(task.id)}
                 className={`text-sm sm:text-base font-semibold leading-snug cursor-pointer transition-colors ${
@@ -238,7 +277,7 @@ export function TaskCard({
                 {renderHighlightedTitle(task.title, searchQuery)}
               </h3>
 
-              {/* Task Metadata Badges */}
+              {/* Task Metadata Badges & Subtask Trigger */}
               <div className="flex flex-wrap items-center gap-2 mt-2.5 text-xs">
                 {/* Category Badge */}
                 <span className="px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold border border-slate-200/60 dark:border-slate-700/60">
@@ -253,6 +292,22 @@ export function TaskCard({
                 >
                   {task.priority}
                 </span>
+
+                {/* Subtask Pill */}
+                <button
+                  type="button"
+                  onClick={() => setShowSubtasks(!showSubtasks)}
+                  className={`px-2 py-0.5 rounded-md font-bold text-[11px] flex items-center gap-1 border transition-colors ${
+                    subtasks.length > 0
+                      ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  <FiList className="w-3 h-3" />
+                  <span>
+                    {subtasks.length > 0 ? `${completedSubsCount}/${subtasks.length} Subtasks` : '+ Subtasks'}
+                  </span>
+                </button>
 
                 {/* Due Date Badge */}
                 {dueInfo.formatted && (
@@ -283,6 +338,64 @@ export function TaskCard({
                   <span>{formatDate(task.createdAt)}</span>
                 </span>
               </div>
+
+              {/* Expandable Dynamic Subtasks Container */}
+              <AnimatePresence>
+                {showSubtasks && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-800 text-xs space-y-2"
+                  >
+                    {subtasks.map((sub) => (
+                      <div key={sub.id} className="flex items-center justify-between gap-2 pl-2">
+                        <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={sub.completed}
+                            onChange={() => onToggleSubtask(task.id, sub.id)}
+                            className="w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span
+                            className={`truncate ${
+                              sub.completed
+                                ? 'line-through text-slate-400 dark:text-slate-500'
+                                : 'text-slate-700 dark:text-slate-200 font-medium'
+                            }`}
+                          >
+                            {sub.title}
+                          </span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteSubtask(task.id, sub.id)}
+                          className="text-slate-400 hover:text-rose-500 p-1"
+                        >
+                          <FiX className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+
+                    <form onSubmit={handleAddSubtaskSubmit} className="flex items-center gap-2 pt-1">
+                      <input
+                        type="text"
+                        value={newSubtaskTitle}
+                        onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                        placeholder="Add a step / subtask..."
+                        className="flex-1 px-3 py-1.5 rounded-lg glass-input text-xs focus:outline-none"
+                      />
+                      <button
+                        type="submit"
+                        className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold hover:bg-indigo-500 flex items-center gap-1"
+                      >
+                        <FiPlus className="w-3 h-3" />
+                        <span>Add</span>
+                      </button>
+                    </form>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
         </div>

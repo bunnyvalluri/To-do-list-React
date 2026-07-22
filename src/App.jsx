@@ -18,6 +18,7 @@ export default function App() {
   const {
     tasks,
     filteredAndSortedTasks,
+    dynamicCategories,
     stats,
     searchQuery,
     setSearchQuery,
@@ -33,6 +34,9 @@ export default function App() {
     editTask,
     deleteTask,
     toggleComplete,
+    addSubtask,
+    toggleSubtask,
+    deleteSubtask,
     duplicateTask,
     togglePin,
     toggleFavorite,
@@ -40,6 +44,7 @@ export default function App() {
     bulkDelete,
     clearCompleted,
     importTasks,
+    moveTask,
     toastMessage,
     clearToast,
     showToast
@@ -58,7 +63,6 @@ export default function App() {
   // Global Keyboard Shortcuts (Delete key for deleting selected tasks)
   useEffect(() => {
     const handleGlobalKeyDown = (e) => {
-      // Avoid triggering when user is typing in input or textarea
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
         return;
       }
@@ -77,7 +81,6 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [selectedTaskIds]);
 
-  // Request single delete
   const handleDeleteSingleRequest = (id) => {
     setDeleteModalConfig({
       isOpen: true,
@@ -86,7 +89,6 @@ export default function App() {
     });
   };
 
-  // Request bulk delete
   const handleDeleteBulkRequest = () => {
     if (selectedTaskIds.length === 0) return;
     setDeleteModalConfig({
@@ -96,7 +98,6 @@ export default function App() {
     });
   };
 
-  // Confirm delete modal action
   const handleConfirmDeleteModal = () => {
     if (deleteModalConfig.mode === 'single' && deleteModalConfig.targetId) {
       deleteTask(deleteModalConfig.targetId);
@@ -106,7 +107,6 @@ export default function App() {
     setDeleteModalConfig({ isOpen: false, mode: 'single', targetId: null });
   };
 
-  // Handle JSON Import file selection
   const handleFileImportChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -124,7 +124,7 @@ export default function App() {
       }
     };
     reader.readAsText(file);
-    e.target.value = ''; // Reset input
+    e.target.value = '';
   };
 
   const handleFocusTaskInput = () => {
@@ -166,16 +166,21 @@ export default function App() {
           setSearchQuery={setSearchQuery}
         />
 
-        {/* Task Input Section */}
+        {/* Task Input Section with Dynamic Categories */}
         <div ref={taskInputContainerRef}>
-          <TaskInput onAddTask={addTask} existingTasks={tasks} />
+          <TaskInput
+            onAddTask={addTask}
+            existingTasks={tasks}
+            categories={dynamicCategories}
+          />
         </div>
 
-        {/* Filter Tabs */}
+        {/* Filter Tabs with Dynamic Categories */}
         <FilterTabs
           activeFilter={activeFilter}
           setActiveFilter={setActiveFilter}
           tasks={tasks}
+          dynamicCategories={dynamicCategories}
         />
 
         {/* Bulk Actions & Sort Controls Bar */}
@@ -192,7 +197,7 @@ export default function App() {
           visibleTaskIds={visibleTaskIds}
         />
 
-        {/* Main Task List */}
+        {/* Main Task List with Drag & Drop and Subtasks */}
         <TaskList
           tasks={filteredAndSortedTasks}
           searchQuery={searchQuery}
@@ -204,6 +209,10 @@ export default function App() {
           onDuplicate={duplicateTask}
           onTogglePin={togglePin}
           onToggleFavorite={toggleFavorite}
+          onAddSubtask={addSubtask}
+          onToggleSubtask={toggleSubtask}
+          onDeleteSubtask={deleteSubtask}
+          onMoveTask={moveTask}
           onShowToast={showToast}
           onCreateFirstTask={handleFocusTaskInput}
         />

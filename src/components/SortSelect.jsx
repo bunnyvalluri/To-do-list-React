@@ -2,6 +2,7 @@ import React from 'react';
 import { FiArrowUpRight, FiSliders } from 'react-icons/fi';
 
 const SORT_OPTIONS = [
+  'Custom Drag',
   'Newest First',
   'Oldest First',
   'Alphabetical A-Z',

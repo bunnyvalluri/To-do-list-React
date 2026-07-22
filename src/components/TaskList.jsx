@@ -1,7 +1,7 @@
 import React from 'react';
 import { TaskCard } from './TaskCard';
 import { EmptyState } from './EmptyState';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 
 export function TaskList({
   tasks,
@@ -14,6 +14,10 @@ export function TaskList({
   onDuplicate,
   onTogglePin,
   onToggleFavorite,
+  onAddSubtask,
+  onToggleSubtask,
+  onDeleteSubtask,
+  onMoveTask,
   onShowToast,
   onCreateFirstTask
 }) {
@@ -42,6 +46,10 @@ export function TaskList({
             onDuplicate={onDuplicate}
             onTogglePin={onTogglePin}
             onToggleFavorite={onToggleFavorite}
+            onAddSubtask={onAddSubtask}
+            onToggleSubtask={onToggleSubtask}
+            onDeleteSubtask={onDeleteSubtask}
+            onMoveTask={onMoveTask}
             onShowToast={onShowToast}
           />
         ))}
