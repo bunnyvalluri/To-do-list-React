@@ -1,18 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { useTasks } from './hooks/useTasks';
+import { useCommandPalette } from './hooks/useCommandPalette';
 import { Header } from './components/Header';
+import { HeroDashboard } from './components/dashboard/HeroDashboard';
 import { Statistics } from './components/Statistics';
 import { SearchBar } from './components/SearchBar';
 import { TaskInput } from './components/TaskInput';
 import { FilterTabs } from './components/FilterTabs';
 import { BulkActions } from './components/BulkActions';
+import { ViewToggle } from './components/ui/ViewToggle';
 import { TaskList } from './components/TaskList';
+import { KanbanView } from './components/tasks/KanbanView';
+import { GridView } from './components/tasks/GridView';
+import { PomodoroWidget } from './components/dashboard/PomodoroWidget';
 import { DeleteModal } from './components/DeleteModal';
 import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
+import { CommandPalette } from './components/common/CommandPalette';
 import { ToastSnackbar } from './components/ToastSnackbar';
 import { Footer } from './components/Footer';
-import { parseTasksJSON } from './utils/helpers';
+import { parseTasksJSON, exportTasksToJSON } from './utils/helpers';
+import { FiClock, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function App() {
   const { theme, toggleTheme } = useTheme();
@@ -27,6 +36,8 @@ export default function App() {
     setActiveFilter,
     sortOption,
     setSortOption,
+    activeView,
+    setActiveView,
     selectedTaskIds,
     toggleSelectTask,
     selectAll,
@@ -35,6 +46,7 @@ export default function App() {
     editTask,
     deleteTask,
     toggleComplete,
+    updateTaskStatus,
     addSubtask,
     toggleSubtask,
     deleteSubtask,
@@ -51,9 +63,11 @@ export default function App() {
     showToast
   } = useTasks();
 
+  const { isOpen: isCommandPaletteOpen, open: openCommandPalette, close: closeCommandPalette } = useCommandPalette();
   const fileInputRef = useRef(null);
   const taskInputContainerRef = useRef(null);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [showFocusTimer, setShowFocusTimer] = useState(false);
 
   // Delete modal state
   const [deleteModalConfig, setDeleteModalConfig] = useState({
@@ -151,17 +165,51 @@ export default function App() {
       />
 
       <div className="w-full max-w-4xl flex flex-col flex-1">
-        {/* Header Section */}
+        {/* Header Section with Command Palette & Shortcuts */}
         <Header
           theme={theme}
           toggleTheme={toggleTheme}
           tasks={tasks}
           onImportClick={() => fileInputRef.current?.click()}
           onOpenShortcuts={() => setIsShortcutsOpen(true)}
+          onOpenCommandPalette={openCommandPalette}
         />
+
+        {/* Hero Banner: Greeting, Streak & Circular Progress Ring */}
+        <HeroDashboard stats={stats} onOpenTaskModal={handleFocusTaskInput} />
 
         {/* Statistics Dashboard */}
         <Statistics stats={stats} />
+
+        {/* Expandable Focus Timer Pill */}
+        <div className="w-full mb-6">
+          <button
+            onClick={() => setShowFocusTimer(!showFocusTimer)}
+            className="w-full glass-card px-5 py-3 rounded-2xl border border-indigo-500/20 flex items-center justify-between hover:bg-slate-100/60 dark:hover:bg-slate-800/60 transition-all text-xs font-extrabold text-slate-800 dark:text-slate-100 shadow-xs cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <FiClock className="w-4 h-4 text-indigo-500" />
+              <span>Pomodoro Focus Timer Sprints</span>
+            </div>
+            <div className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
+              <span>{showFocusTimer ? 'Hide Focus Timer' : 'Show Focus Timer'}</span>
+              {showFocusTimer ? <FiChevronUp className="w-4 h-4" /> : <FiChevronDown className="w-4 h-4" />}
+            </div>
+          </button>
+
+          <AnimatePresence>
+            {showFocusTimer && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="mt-3 overflow-hidden"
+              >
+                <PomodoroWidget />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Search Bar */}
         <SearchBar
@@ -169,7 +217,7 @@ export default function App() {
           setSearchQuery={setSearchQuery}
         />
 
-        {/* Task Input Section with Dynamic Categories */}
+        {/* Task Input Section */}
         <div ref={taskInputContainerRef}>
           <TaskInput
             onAddTask={addTask}
@@ -178,7 +226,7 @@ export default function App() {
           />
         </div>
 
-        {/* Filter Tabs with Dynamic Categories */}
+        {/* Filter Tabs */}
         <FilterTabs
           activeFilter={activeFilter}
           setActiveFilter={setActiveFilter}
@@ -186,43 +234,109 @@ export default function App() {
           dynamicCategories={dynamicCategories}
         />
 
-        {/* Bulk Actions & Sort Controls Bar */}
-        <BulkActions
-          totalVisibleTasks={filteredAndSortedTasks.length}
-          selectedTaskIds={selectedTaskIds}
-          onSelectAll={selectAll}
-          onDeselectAll={deselectAll}
-          onBulkComplete={bulkComplete}
-          onBulkDeleteRequest={handleDeleteBulkRequest}
-          onClearCompleted={clearCompleted}
-          sortOption={sortOption}
-          setSortOption={setSortOption}
-          visibleTaskIds={visibleTaskIds}
-        />
+        {/* Bulk Actions & View Switcher Bar */}
+        <div className="w-full space-y-3 mb-4">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <span className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+              Workspace Task Board
+            </span>
+            <ViewToggle activeView={activeView} setActiveView={setActiveView} />
+          </div>
 
-        {/* Main Task List with Drag & Drop and Subtasks */}
-        <TaskList
-          tasks={filteredAndSortedTasks}
-          searchQuery={searchQuery}
-          selectedTaskIds={selectedTaskIds}
-          onToggleSelect={toggleSelectTask}
-          onToggleComplete={toggleComplete}
-          onEditTask={editTask}
-          onDeleteRequest={handleDeleteSingleRequest}
-          onDuplicate={duplicateTask}
-          onTogglePin={togglePin}
-          onToggleFavorite={toggleFavorite}
-          onAddSubtask={addSubtask}
-          onToggleSubtask={toggleSubtask}
-          onDeleteSubtask={deleteSubtask}
-          onMoveTask={moveTask}
-          onShowToast={showToast}
-          onCreateFirstTask={handleFocusTaskInput}
-        />
+          <BulkActions
+            totalVisibleTasks={filteredAndSortedTasks.length}
+            selectedTaskIds={selectedTaskIds}
+            onSelectAll={selectAll}
+            onDeselectAll={deselectAll}
+            onBulkComplete={bulkComplete}
+            onBulkDeleteRequest={handleDeleteBulkRequest}
+            onClearCompleted={clearCompleted}
+            sortOption={sortOption}
+            setSortOption={setSortOption}
+            visibleTaskIds={visibleTaskIds}
+          />
+        </div>
+
+        {/* Main Task List rendering selected View (List, Kanban, Grid) */}
+        {activeView === 'kanban' && (
+          <KanbanView
+            tasks={filteredAndSortedTasks}
+            searchQuery={searchQuery}
+            selectedTaskIds={selectedTaskIds}
+            onToggleSelect={toggleSelectTask}
+            onToggleComplete={toggleComplete}
+            onEditTask={editTask}
+            onDeleteRequest={handleDeleteSingleRequest}
+            onDuplicate={duplicateTask}
+            onTogglePin={togglePin}
+            onToggleFavorite={toggleFavorite}
+            onAddSubtask={addSubtask}
+            onToggleSubtask={toggleSubtask}
+            onDeleteSubtask={deleteSubtask}
+            onMoveTask={moveTask}
+            onUpdateTaskStatus={updateTaskStatus}
+            onShowToast={showToast}
+          />
+        )}
+
+        {activeView === 'grid' && (
+          <GridView
+            tasks={filteredAndSortedTasks}
+            searchQuery={searchQuery}
+            selectedTaskIds={selectedTaskIds}
+            onToggleSelect={toggleSelectTask}
+            onToggleComplete={toggleComplete}
+            onEditTask={editTask}
+            onDeleteRequest={handleDeleteSingleRequest}
+            onDuplicate={duplicateTask}
+            onTogglePin={togglePin}
+            onToggleFavorite={toggleFavorite}
+            onAddSubtask={addSubtask}
+            onToggleSubtask={toggleSubtask}
+            onDeleteSubtask={deleteSubtask}
+            onMoveTask={moveTask}
+            onShowToast={showToast}
+            onCreateFirstTask={handleFocusTaskInput}
+          />
+        )}
+
+        {(activeView === 'list' || !['kanban', 'grid'].includes(activeView)) && (
+          <TaskList
+            tasks={filteredAndSortedTasks}
+            searchQuery={searchQuery}
+            selectedTaskIds={selectedTaskIds}
+            onToggleSelect={toggleSelectTask}
+            onToggleComplete={toggleComplete}
+            onEditTask={editTask}
+            onDeleteRequest={handleDeleteSingleRequest}
+            onDuplicate={duplicateTask}
+            onTogglePin={togglePin}
+            onToggleFavorite={toggleFavorite}
+            onAddSubtask={addSubtask}
+            onToggleSubtask={toggleSubtask}
+            onDeleteSubtask={deleteSubtask}
+            onMoveTask={moveTask}
+            onShowToast={showToast}
+            onCreateFirstTask={handleFocusTaskInput}
+          />
+        )}
 
         {/* Footer */}
         <Footer totalTasks={stats.total} completedTasks={stats.completed} />
       </div>
+
+      {/* Command Palette Overlay (Ctrl + K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={closeCommandPalette}
+        onOpenTaskModal={handleFocusTaskInput}
+        setActivePage={() => {}}
+        toggleTheme={toggleTheme}
+        theme={theme}
+        onExport={() => exportTasksToJSON(tasks)}
+        onImportClick={() => fileInputRef.current?.click()}
+        onClearCompleted={clearCompleted}
+      />
 
       {/* Delete Confirmation Modal */}
       <DeleteModal

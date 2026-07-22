@@ -1,10 +1,10 @@
 import React from 'react';
-import { FiCheckSquare, FiCalendar, FiPrinter, FiDownload, FiUpload, FiCommand } from 'react-icons/fi';
+import { FiCheckSquare, FiCalendar, FiPrinter, FiDownload, FiUpload, FiCommand, FiSearch } from 'react-icons/fi';
 import { ThemeToggle } from './ThemeToggle';
 import { printTaskList, exportTasksToJSON } from '../utils/helpers';
 import { motion } from 'framer-motion';
 
-export function Header({ theme, toggleTheme, tasks, onImportClick, onOpenShortcuts }) {
+export function Header({ theme, toggleTheme, tasks, onImportClick, onOpenShortcuts, onOpenCommandPalette }) {
   const currentDate = new Date().toLocaleDateString(undefined, {
     weekday: 'short',
     month: 'short',
@@ -38,6 +38,18 @@ export function Header({ theme, toggleTheme, tasks, onImportClick, onOpenShortcu
           </div>
         </div>
 
+        {/* Command Palette Trigger Search Pill */}
+        {onOpenCommandPalette && (
+          <button
+            onClick={onOpenCommandPalette}
+            className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-input text-xs text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-all border border-slate-200 dark:border-slate-800"
+          >
+            <FiSearch className="w-3.5 h-3.5 text-indigo-500" />
+            <span>Command Palette</span>
+            <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[10px] font-mono font-bold">Ctrl+K</kbd>
+          </button>
+        )}
+
         {/* Date, Actions & Theme Toggle */}
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
           {/* Current Date */}
@@ -51,10 +63,10 @@ export function Header({ theme, toggleTheme, tasks, onImportClick, onOpenShortcu
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={onOpenShortcuts}
+              onClick={onOpenCommandPalette || onOpenShortcuts}
               className="p-2 rounded-full hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
-              title="Keyboard Shortcuts"
-              aria-label="View keyboard shortcuts"
+              title="Command Palette (Ctrl + K)"
+              aria-label="Open Command Palette"
             >
               <FiCommand className="w-4 h-4" />
             </motion.button>
