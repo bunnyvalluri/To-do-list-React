@@ -1,6 +1,7 @@
 import React from 'react';
 import { FiCheckSquare, FiSquare, FiCheckCircle, FiTrash2, FiX } from 'react-icons/fi';
 import { SortSelect } from './SortSelect';
+import { ViewToggle } from './ui/ViewToggle';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function BulkActions({
@@ -13,6 +14,8 @@ export function BulkActions({
   onClearCompleted,
   sortOption,
   setSortOption,
+  activeView,
+  setActiveView,
   visibleTaskIds
 }) {
   const isAllSelected =
@@ -48,8 +51,13 @@ export function BulkActions({
         </label>
       </div>
 
-      {/* Bulk Action Controls */}
-      <div className="flex items-center gap-2 flex-wrap">
+      {/* View Toggle + Bulk Action Controls */}
+      <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-between sm:justify-end">
+        {/* View Switcher (List, Kanban, Grid) */}
+        {activeView && setActiveView && (
+          <ViewToggle activeView={activeView} setActiveView={setActiveView} />
+        )}
+
         <AnimatePresence>
           {hasSelection && (
             <motion.div
