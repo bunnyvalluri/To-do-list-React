@@ -43,7 +43,7 @@ export function Header({
     { id: 'calendar', label: 'Cal', icon: <FiCalendar className="w-4 h-4" /> },
     { id: 'analytics', label: 'Stats', icon: <FiBarChart2 className="w-4 h-4" /> },
     { id: 'focus', label: 'Focus', icon: <FiClock className="w-4 h-4" /> },
-    { id: 'settings', label: 'Set', icon: <FiSettings className="w-4 h-4" /> }
+    { id: 'settings', label: 'Settings', icon: <FiSettings className="w-4 h-4" /> }
   ];
 
   return (
@@ -122,14 +122,14 @@ export function Header({
       </div>
 
       {/* Mobile Page Navigation Bar */}
-      <div className="flex md:hidden items-center justify-between gap-1 mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-800 overflow-x-auto scrollbar-none">
+      <div className="flex md:hidden items-center justify-start gap-1 mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-800 overflow-x-auto scrollbar-none pb-0.5 w-full">
         {mobileNavItems.map((item) => {
           const isActive = activePage === item.id;
           return (
             <button
               key={item.id}
               onClick={() => setActivePage(item.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`shrink-0 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
                 isActive
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'

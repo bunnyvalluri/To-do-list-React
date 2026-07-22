@@ -127,6 +127,66 @@ export function TaskCard({
   const subtasks = task.subtasks || [];
   const completedSubsCount = subtasks.filter(s => s.completed).length;
 
+  const renderActionButtons = () => (
+    <>
+      <button
+        onClick={() => onTogglePin(task.id)}
+        className={`p-1.5 rounded-lg transition-colors ${
+          task.pinned
+            ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950'
+            : 'text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+        }`}
+        title={task.pinned ? 'Unpin Task' : 'Pin Task to Top'}
+      >
+        <BsPinAngle className="w-4 h-4" />
+      </button>
+
+      <button
+        onClick={() => onToggleFavorite(task.id)}
+        className={`p-1.5 rounded-lg transition-colors ${
+          task.favorite
+            ? 'text-amber-500 fill-amber-500'
+            : 'text-slate-500 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+        }`}
+        title={task.favorite ? 'Remove Favorite' : 'Mark Favorite'}
+      >
+        <FiStar className="w-4 h-4" />
+      </button>
+
+      <button
+        onClick={() => setIsEditing(true)}
+        className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+        title="Edit Task"
+      >
+        <FiEdit2 className="w-4 h-4" />
+      </button>
+
+      <button
+        onClick={() => onDuplicate(task.id)}
+        className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+        title="Duplicate Task"
+      >
+        <FiCornerDownRight className="w-4 h-4" />
+      </button>
+
+      <button
+        onClick={handleCopy}
+        className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+        title="Copy to Clipboard"
+      >
+        <FiCopy className="w-4 h-4" />
+      </button>
+
+      <button
+        onClick={() => onDeleteRequest(task.id)}
+        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors"
+        title="Delete Task"
+      >
+        <FiTrash2 className="w-4 h-4" />
+      </button>
+    </>
+  );
+
   return (
     <motion.div
       layout
@@ -175,15 +235,15 @@ export function TaskCard({
       )}
 
       <div className="flex flex-col gap-3 pl-2">
-        {/* Top Header Row: Checkbox + Checkmark + Title + Action Bar */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
+        {/* Top Header Row: Checkbox + Checkmark + Title + Desktop Action Bar */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0 flex-1">
             {/* Multi-Select Checkbox */}
             <input
               type="checkbox"
               checked={isSelected}
               onChange={() => onToggleSelect(task.id)}
-              className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shrink-0"
+              className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shrink-0 mt-1"
               aria-label={`Select task: ${task.title}`}
             />
 
@@ -192,7 +252,7 @@ export function TaskCard({
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => onToggleComplete(task.id)}
-              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
+              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0 mt-0.5 ${
                 task.completed
                   ? 'bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/30'
                   : 'border-slate-300 dark:border-slate-600 hover:border-emerald-500 dark:hover:border-emerald-400'
@@ -217,67 +277,20 @@ export function TaskCard({
             )}
           </div>
 
-          {/* Action Buttons Toolbar */}
+          {/* Desktop Floating Action Toolbar (Top right on desktop) */}
           {!isEditing && (
-            <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-slate-800/90 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60 shadow-xs shrink-0">
-              <button
-                onClick={() => onTogglePin(task.id)}
-                className={`p-1.5 rounded-lg transition-colors ${
-                  task.pinned
-                    ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950'
-                    : 'text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700'
-                }`}
-                title={task.pinned ? 'Unpin Task' : 'Pin Task to Top'}
-              >
-                <BsPinAngle className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => onToggleFavorite(task.id)}
-                className={`p-1.5 rounded-lg transition-colors ${
-                  task.favorite
-                    ? 'text-amber-500 fill-amber-500'
-                    : 'text-slate-500 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-700'
-                }`}
-                title={task.favorite ? 'Remove Favorite' : 'Mark Favorite'}
-              >
-                <FiStar className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => setIsEditing(true)}
-                className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                title="Edit Task"
-              >
-                <FiEdit2 className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => onDuplicate(task.id)}
-                className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                title="Duplicate Task"
-              >
-                <FiCornerDownRight className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={handleCopy}
-                className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                title="Copy to Clipboard"
-              >
-                <FiCopy className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => onDeleteRequest(task.id)}
-                className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors"
-                title="Delete Task"
-              >
-                <FiTrash2 className="w-4 h-4" />
-              </button>
+            <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-slate-800/90 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60 shadow-xs shrink-0 items-start">
+              {renderActionButtons()}
             </div>
           )}
         </div>
+
+        {/* Mobile Action Buttons Toolbar (Dedicated clean line below title on mobile) */}
+        {!isEditing && (
+          <div className="flex sm:hidden items-center gap-1 bg-slate-100/90 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60 w-fit pl-1 ml-9">
+            {renderActionButtons()}
+          </div>
+        )}
 
         {/* Inline Edit Form */}
         {isEditing && (
@@ -340,7 +353,7 @@ export function TaskCard({
           </div>
         )}
 
-        {/* Bottom Badges Row (Placed underneath title in dedicated full row) */}
+        {/* Bottom Badges Row */}
         {!isEditing && (
           <div className="flex flex-wrap items-center gap-2 pl-9 text-xs">
             {/* Category Badge */}
