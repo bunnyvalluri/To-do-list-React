@@ -1,52 +1,55 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
-  :root {
-    --bg-mesh-1: #4f46e5;
-    --bg-mesh-2: #06b6d4;
-    --bg-mesh-3: #8b5cf6;
-  }
-
-  .dark {
-    --bg-mesh-1: #1e1b4b;
-    --bg-mesh-2: #0e7490;
-    --bg-mesh-3: #4c1d95;
-  }
-
   body {
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     min-height: 100vh;
+    background-color: #f8fafc;
+    color: #0f172a;
     transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  .dark body {
+    background-color: #090d16;
+    color: #f8fafc;
   }
 }
 
-/* Glassmorphism Utilities */
+/* Glassmorphism Light & Dark Utilities */
 .glass-card {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
 }
 
 .dark .glass-card {
-  background: rgba(17, 24, 39, 0.75);
+  background: rgba(17, 24, 39, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
 }
 
 .glass-input {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  color: #0f172a;
 }
 
 .dark .glass-input {
-  background: rgba(31, 41, 55, 0.85);
+  background: rgba(30, 41, 59, 0.85);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(55, 65, 81, 0.8);
+  border: 1px solid rgba(71, 85, 105, 0.7);
+  color: #f8fafc;
+}
+
+.dark .glass-input::placeholder {
+  color: #94a3b8;
 }
 
 /* Custom Scrollbar */
@@ -60,12 +63,16 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.4);
+  background: rgba(148, 163, 184, 0.4);
   border-radius: 9999px;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.6);
+}
+
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(107, 114, 128, 0.7);
+  background: rgba(100, 116, 139, 0.7);
 }
 
 /* Custom Print Styles */
