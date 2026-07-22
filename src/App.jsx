@@ -9,6 +9,7 @@ import { FilterTabs } from './components/FilterTabs';
 import { BulkActions } from './components/BulkActions';
 import { TaskList } from './components/TaskList';
 import { DeleteModal } from './components/DeleteModal';
+import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 import { ToastSnackbar } from './components/ToastSnackbar';
 import { Footer } from './components/Footer';
 import { parseTasksJSON } from './utils/helpers';
@@ -52,6 +53,7 @@ export default function App() {
 
   const fileInputRef = useRef(null);
   const taskInputContainerRef = useRef(null);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
   // Delete modal state
   const [deleteModalConfig, setDeleteModalConfig] = useState({
@@ -155,6 +157,7 @@ export default function App() {
           toggleTheme={toggleTheme}
           tasks={tasks}
           onImportClick={() => fileInputRef.current?.click()}
+          onOpenShortcuts={() => setIsShortcutsOpen(true)}
         />
 
         {/* Statistics Dashboard */}
@@ -227,6 +230,12 @@ export default function App() {
         onClose={() => setDeleteModalConfig({ isOpen: false, mode: 'single', targetId: null })}
         onConfirm={handleConfirmDeleteModal}
         count={deleteModalConfig.mode === 'bulk' ? selectedTaskIds.length : 1}
+      />
+
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
       />
 
       {/* Notification Toast Snackbar */}

@@ -1,10 +1,10 @@
 import React from 'react';
-import { FiCheckSquare, FiCalendar, FiPrinter, FiDownload, FiUpload } from 'react-icons/fi';
+import { FiCheckSquare, FiCalendar, FiPrinter, FiDownload, FiUpload, FiCommand } from 'react-icons/fi';
 import { ThemeToggle } from './ThemeToggle';
 import { printTaskList, exportTasksToJSON } from '../utils/helpers';
 import { motion } from 'framer-motion';
 
-export function Header({ theme, toggleTheme, tasks, onImportClick }) {
+export function Header({ theme, toggleTheme, tasks, onImportClick, onOpenShortcuts }) {
   const currentDate = new Date().toLocaleDateString(undefined, {
     weekday: 'short',
     month: 'short',
@@ -48,6 +48,17 @@ export function Header({ theme, toggleTheme, tasks, onImportClick }) {
 
           {/* Quick Header Actions */}
           <div className="flex items-center gap-1">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onOpenShortcuts}
+              className="p-2 rounded-full hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
+              title="Keyboard Shortcuts"
+              aria-label="View keyboard shortcuts"
+            >
+              <FiCommand className="w-4 h-4" />
+            </motion.button>
+
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
