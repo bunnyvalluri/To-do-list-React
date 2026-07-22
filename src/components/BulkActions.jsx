@@ -29,7 +29,7 @@ export function BulkActions({
   };
 
   return (
-    <div className="w-full glass-card p-3 sm:p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+    <div className="w-full glass-card p-3 sm:p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
       {/* Master Select All Checkbox */}
       <div className="flex items-center gap-3">
         <label className="flex items-center gap-2 text-xs font-extrabold text-slate-800 dark:text-slate-100 cursor-pointer select-none">

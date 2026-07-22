@@ -402,7 +402,7 @@ export function TaskCard({
 
         {/* Action Buttons Floating Toolbar */}
         {!isEditing && (
-          <div className="flex items-center gap-1 opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 dark:bg-slate-800/90 p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50 shadow-xs">
+          <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-slate-800/90 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60 shadow-xs shrink-0">
             <button
               onClick={() => onTogglePin(task.id)}
               className={`p-1.5 rounded-lg transition-colors ${
