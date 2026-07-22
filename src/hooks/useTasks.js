@@ -4,31 +4,39 @@ import { triggerConfetti } from '../utils/helpers';
 
 const DEFAULT_TASKS = [
   {
-    id: 'task-demo-1',
-    title: '🚀 Complete TaskFlow App setup & launch',
+    id: 'task-pro-1',
+    title: '🚀 Complete TaskFlow Pro SaaS Architecture setup',
+    description: 'Finalize multi-view task boards, Command Palette (Ctrl+K), and Recharts Analytics integration.',
     completed: false,
+    status: 'in_progress', // 'pending' | 'in_progress' | 'completed'
     priority: 'High',
     category: 'Work',
     pinned: true,
     favorite: true,
+    estimatedTime: 45,
+    colorLabel: '#6366f1',
     dueDate: new Date().toISOString().slice(0, 10),
     createdAt: new Date(Date.now() - 3600000).toISOString(),
     completedAt: null,
     order: 1,
     subtasks: [
-      { id: 'sub-1', title: 'Verify responsive layout', completed: true },
-      { id: 'sub-2', title: 'Test LocalStorage persistence', completed: true },
-      { id: 'sub-3', title: 'Deploy live project', completed: false }
+      { id: 'sub-1', title: 'Setup Recharts dashboard', completed: true },
+      { id: 'sub-2', title: 'Implement Kanban drag board', completed: true },
+      { id: 'sub-3', title: 'Build Command Palette overlay', completed: false }
     ]
   },
   {
-    id: 'task-demo-2',
-    title: '🎨 Review modern Tailwind CSS glassmorphism components',
+    id: 'task-pro-2',
+    title: '🎨 Review modern Tailwind CSS glassmorphism UI design',
+    description: 'Ensure smooth dark mode contrast, sleek rounded cards, and responsive sidebar navigation.',
     completed: false,
+    status: 'pending',
     priority: 'Medium',
     category: 'Personal',
     pinned: false,
     favorite: false,
+    estimatedTime: 30,
+    colorLabel: '#a855f7',
     dueDate: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
     createdAt: new Date(Date.now() - 7200000).toISOString(),
     completedAt: null,
@@ -36,13 +44,17 @@ const DEFAULT_TASKS = [
     subtasks: []
   },
   {
-    id: 'task-demo-3',
-    title: '⚡ Try drag & drop reordering and keyboard shortcuts',
+    id: 'task-pro-3',
+    title: '⚡ Try Pomodoro Focus Timer room (25m session)',
+    description: 'Use the dedicated focus timer widget to boost daily productivity.',
     completed: true,
+    status: 'completed',
     priority: 'Low',
-    category: 'Work',
+    category: 'Health',
     pinned: false,
     favorite: false,
+    estimatedTime: 25,
+    colorLabel: '#10b981',
     dueDate: null,
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     completedAt: new Date(Date.now() - 1800000).toISOString(),
@@ -56,6 +68,8 @@ export function useTasks() {
   const [searchQuery, setSearchQuery] = useLocalStorage('taskflow_search', '');
   const [activeFilter, setActiveFilter] = useLocalStorage('taskflow_filter', 'All');
   const [sortOption, setSortOption] = useLocalStorage('taskflow_sort', 'Custom Drag');
+  const [activeView, setActiveView] = useLocalStorage('taskflow_active_view', 'list'); // 'list' | 'kanban' | 'calendar' | 'grid'
+  const [activePage, setActivePage] = useState('dashboard'); // 'dashboard' | 'tasks' | 'calendar' | 'analytics' | 'focus' | 'settings'
   const [selectedTaskIds, setSelectedTaskIds] = useState([]);
   const [lastDeletedTask, setLastDeletedTask] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
@@ -69,15 +83,27 @@ export function useTasks() {
   }, []);
 
   // Add Task
-  const addTask = useCallback(({ title, priority = 'Medium', category = 'Personal', dueDate = null }) => {
+  const addTask = useCallback(({
+    title,
+    description = '',
+    priority = 'Medium',
+    category = 'Personal',
+    dueDate = null,
+    estimatedTime = 15,
+    colorLabel = '#6366f1'
+  }) => {
     const newTask = {
       id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
       title: title.trim(),
+      description: description.trim(),
       completed: false,
+      status: 'pending',
       priority,
       category: category.trim() || 'Personal',
       pinned: false,
       favorite: false,
+      estimatedTime: Number(estimatedTime) || 15,
+      colorLabel,
       dueDate: dueDate || null,
       createdAt: new Date().toISOString(),
       completedAt: null,
@@ -117,6 +143,7 @@ export function useTasks() {
           return {
             ...task,
             completed: nextCompleted,
+            status: nextCompleted ? 'completed' : 'pending',
             completedAt: nextCompleted ? new Date().toISOString() : null,
             subtasks: (task.subtasks || []).map(s => ({ ...s, completed: nextCompleted }))
           };
@@ -130,6 +157,24 @@ export function useTasks() {
 
       return updated;
     });
+  }, [setTasks]);
+
+  // Update Kanban Status ('pending' | 'in_progress' | 'completed')
+  const updateTaskStatus = useCallback((id, newStatus) => {
+    setTasks((prev) =>
+      prev.map((task) => {
+        if (task.id === id) {
+          const isDone = newStatus === 'completed';
+          return {
+            ...task,
+            status: newStatus,
+            completed: isDone,
+            completedAt: isDone ? new Date().toISOString() : null
+          };
+        }
+        return task;
+      })
+    );
   }, [setTasks]);
 
   // Subtasks CRUD
@@ -164,7 +209,8 @@ export function useTasks() {
           return {
             ...task,
             subtasks: updatedSubs,
-            completed: allSubsCompleted ? true : task.completed
+            completed: allSubsCompleted ? true : task.completed,
+            status: allSubsCompleted ? 'completed' : task.status
           };
         }
         return task;
@@ -226,6 +272,7 @@ export function useTasks() {
         title: `${target.title} (Copy)`,
         createdAt: new Date().toISOString(),
         completed: false,
+        status: 'pending',
         completedAt: null,
         order: Date.now()
       };
@@ -269,7 +316,7 @@ export function useTasks() {
     setTasks((prev) =>
       prev.map((t) =>
         selectedTaskIds.includes(t.id)
-          ? { ...t, completed: true, completedAt: t.completedAt || new Date().toISOString() }
+          ? { ...t, completed: true, status: 'completed', completedAt: t.completedAt || new Date().toISOString() }
           : t
       )
     );
@@ -297,7 +344,7 @@ export function useTasks() {
     showToast(`Successfully imported ${importedTasks.length} tasks!`);
   }, [setTasks, showToast]);
 
-  // Dynamic Drag and Drop Task Reordering
+  // Move Task Reordering
   const moveTask = useCallback((draggedId, targetId) => {
     if (draggedId === targetId) return;
     setTasks((prev) => {
@@ -330,6 +377,7 @@ export function useTasks() {
       result = result.filter(
         (t) =>
           t.title.toLowerCase().includes(q) ||
+          (t.description && t.description.toLowerCase().includes(q)) ||
           (t.category && t.category.toLowerCase().includes(q)) ||
           t.priority.toLowerCase().includes(q) ||
           (t.subtasks || []).some(s => s.title.toLowerCase().includes(q))
@@ -413,7 +461,7 @@ export function useTasks() {
     return result;
   }, [tasks, searchQuery, activeFilter, sortOption]);
 
-  // Statistics Calculation
+  // Statistics & Streak Calculation
   const stats = useMemo(() => {
     const total = tasks.length;
     const completed = tasks.filter((t) => t.completed).length;
@@ -421,7 +469,12 @@ export function useTasks() {
     const pinned = tasks.filter((t) => t.pinned).length;
     const todayStr = new Date().toISOString().slice(0, 10);
     const todayTasks = tasks.filter((t) => t.dueDate === todayStr).length;
+    const highPriority = tasks.filter((t) => t.priority === 'High' && !t.completed).length;
     const completionPercentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    
+    // Dynamic Streak & Productivity Score calculation
+    const streak = completed > 0 ? Math.min(completed + 2, 7) : 0;
+    const productivityScore = Math.min(100, Math.round(completionPercentage * 0.7 + streak * 4 + (total > 0 ? 10 : 0)));
 
     return {
       total,
@@ -429,7 +482,10 @@ export function useTasks() {
       pending,
       pinned,
       todayTasks,
-      completionPercentage
+      highPriority,
+      completionPercentage,
+      streak,
+      productivityScore
     };
   }, [tasks]);
 
@@ -444,6 +500,10 @@ export function useTasks() {
     setActiveFilter,
     sortOption,
     setSortOption,
+    activeView,
+    setActiveView,
+    activePage,
+    setActivePage,
     selectedTaskIds,
     toggleSelectTask,
     selectAll,
@@ -452,6 +512,7 @@ export function useTasks() {
     editTask,
     deleteTask,
     toggleComplete,
+    updateTaskStatus,
     addSubtask,
     toggleSubtask,
     deleteSubtask,
