@@ -1,25 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { useTasks } from './hooks/useTasks';
-import { useCommandPalette } from './hooks/useCommandPalette';
-import { Sidebar } from './components/layout/Sidebar';
-import { Header } from './components/layout/Header';
-import { Footer } from './components/Footer';
-
-// Pages
-import { DashboardPage } from './pages/DashboardPage';
-import { TasksPage } from './pages/TasksPage';
-import { CalendarPage } from './pages/CalendarPage';
-import { AnalyticsPage } from './pages/AnalyticsPage';
-import { FocusPage } from './pages/FocusPage';
-import { SettingsPage } from './pages/SettingsPage';
-
-// Common Modals & Overlays
-import { CommandPalette } from './components/common/CommandPalette';
-import { TaskCreationModal } from './components/tasks/TaskCreationModal';
+import { Header } from './components/Header';
+import { Statistics } from './components/Statistics';
+import { SearchBar } from './components/SearchBar';
+import { TaskInput } from './components/TaskInput';
+import { FilterTabs } from './components/FilterTabs';
+import { BulkActions } from './components/BulkActions';
+import { TaskList } from './components/TaskList';
 import { DeleteModal } from './components/DeleteModal';
+import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 import { ToastSnackbar } from './components/ToastSnackbar';
-import { parseTasksJSON, exportTasksToJSON } from './utils/helpers';
+import { Footer } from './components/Footer';
+import { parseTasksJSON } from './utils/helpers';
 
 export default function App() {
   const { theme, toggleTheme } = useTheme();
@@ -34,10 +27,6 @@ export default function App() {
     setActiveFilter,
     sortOption,
     setSortOption,
-    activeView,
-    setActiveView,
-    activePage,
-    setActivePage,
     selectedTaskIds,
     toggleSelectTask,
     selectAll,
@@ -46,7 +35,6 @@ export default function App() {
     editTask,
     deleteTask,
     toggleComplete,
-    updateTaskStatus,
     addSubtask,
     toggleSubtask,
     deleteSubtask,
@@ -63,13 +51,11 @@ export default function App() {
     showToast
   } = useTasks();
 
-  const { isOpen: isCommandPaletteOpen, open: openCommandPalette, close: closeCommandPalette, toggle: toggleCommandPalette } = useCommandPalette();
-  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-
   const fileInputRef = useRef(null);
   const taskInputContainerRef = useRef(null);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
-  // Delete Modal state
+  // Delete modal state
   const [deleteModalConfig, setDeleteModalConfig] = useState({
     isOpen: false,
     mode: 'single', // 'single' | 'bulk'
@@ -144,18 +130,17 @@ export default function App() {
   };
 
   const handleFocusTaskInput = () => {
-    setActivePage('tasks');
-    setTimeout(() => {
-      const inputEl = taskInputContainerRef.current?.querySelector('input[type="text"]');
-      if (inputEl) {
-        inputEl.focus();
-        inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 100);
+    const inputEl = taskInputContainerRef.current?.querySelector('input[type="text"]');
+    if (inputEl) {
+      inputEl.focus();
+      inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   };
 
+  const visibleTaskIds = filteredAndSortedTasks.map((t) => t.id);
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex transition-colors duration-300 selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 px-3 sm:px-6 py-4 flex flex-col items-center justify-between transition-colors duration-300 selection:bg-indigo-500 selection:text-white">
       {/* Hidden File Input for JSON import */}
       <input
         type="file"
@@ -165,141 +150,79 @@ export default function App() {
         className="hidden"
       />
 
-      {/* Desktop Collapsible Sidebar */}
-      <Sidebar
-        activePage={activePage}
-        setActivePage={setActivePage}
-        stats={stats}
-        onOpenTaskModal={() => setIsTaskModalOpen(true)}
-      />
+      <div className="w-full max-w-4xl flex flex-col flex-1">
+        {/* Header Section */}
+        <Header
+          theme={theme}
+          toggleTheme={toggleTheme}
+          tasks={tasks}
+          onImportClick={() => fileInputRef.current?.click()}
+          onOpenShortcuts={() => setIsShortcutsOpen(true)}
+        />
 
-      {/* Main Content Workspace */}
-      <div className="flex-1 flex flex-col items-center px-3 sm:px-8 py-4 overflow-y-auto max-w-full">
-        <div className="w-full max-w-6xl flex flex-col flex-1">
-          {/* Sticky Header */}
-          <Header
-            theme={theme}
-            toggleTheme={toggleTheme}
-            tasks={tasks}
-            activePage={activePage}
-            setActivePage={setActivePage}
-            onOpenCommandPalette={openCommandPalette}
-            onImportClick={() => fileInputRef.current?.click()}
+        {/* Statistics Dashboard */}
+        <Statistics stats={stats} />
+
+        {/* Search Bar */}
+        <SearchBar
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+        />
+
+        {/* Task Input Section with Dynamic Categories */}
+        <div ref={taskInputContainerRef}>
+          <TaskInput
+            onAddTask={addTask}
+            existingTasks={tasks}
+            categories={dynamicCategories}
           />
-
-          {/* Active Page View */}
-          <main className="flex-1 w-full">
-            {activePage === 'dashboard' && (
-              <DashboardPage
-                stats={stats}
-                tasks={tasks}
-                onOpenTaskModal={() => setIsTaskModalOpen(true)}
-                setActivePage={setActivePage}
-                onToggleSelect={toggleSelectTask}
-                onToggleComplete={toggleComplete}
-                onEditTask={editTask}
-                onDeleteRequest={handleDeleteSingleRequest}
-                onDuplicate={duplicateTask}
-                onTogglePin={togglePin}
-                onToggleFavorite={toggleFavorite}
-                onAddSubtask={addSubtask}
-                onToggleSubtask={toggleSubtask}
-                onDeleteSubtask={deleteSubtask}
-                onMoveTask={moveTask}
-                onShowToast={showToast}
-                onCreateFirstTask={handleFocusTaskInput}
-              />
-            )}
-
-            {activePage === 'tasks' && (
-              <TasksPage
-                tasks={tasks}
-                filteredAndSortedTasks={filteredAndSortedTasks}
-                dynamicCategories={dynamicCategories}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                activeFilter={activeFilter}
-                setActiveFilter={setActiveFilter}
-                sortOption={sortOption}
-                setSortOption={setSortOption}
-                activeView={activeView}
-                setActiveView={setActiveView}
-                selectedTaskIds={selectedTaskIds}
-                toggleSelectTask={toggleSelectTask}
-                selectAll={selectAll}
-                deselectAll={deselectAll}
-                addTask={addTask}
-                editTask={editTask}
-                deleteTask={deleteTask}
-                toggleComplete={toggleComplete}
-                updateTaskStatus={updateTaskStatus}
-                addSubtask={addSubtask}
-                toggleSubtask={toggleSubtask}
-                deleteSubtask={deleteSubtask}
-                duplicateTask={duplicateTask}
-                togglePin={togglePin}
-                toggleFavorite={toggleFavorite}
-                bulkComplete={bulkComplete}
-                bulkDelete={bulkDelete}
-                clearCompleted={clearCompleted}
-                moveTask={moveTask}
-                showToast={showToast}
-                handleDeleteSingleRequest={handleDeleteSingleRequest}
-                handleDeleteBulkRequest={handleDeleteBulkRequest}
-                handleFocusTaskInput={handleFocusTaskInput}
-                taskInputContainerRef={taskInputContainerRef}
-              />
-            )}
-
-            {activePage === 'calendar' && (
-              <CalendarPage tasks={tasks} toggleComplete={toggleComplete} />
-            )}
-
-            {activePage === 'analytics' && (
-              <AnalyticsPage tasks={tasks} stats={stats} />
-            )}
-
-            {activePage === 'focus' && (
-              <FocusPage />
-            )}
-
-            {activePage === 'settings' && (
-              <SettingsPage
-                theme={theme}
-                toggleTheme={toggleTheme}
-                tasks={tasks}
-                onImportClick={() => fileInputRef.current?.click()}
-                onClearCompleted={clearCompleted}
-                showToast={showToast}
-              />
-            )}
-          </main>
-
-          {/* Minimal SaaS Footer */}
-          <Footer totalTasks={stats.total} completedTasks={stats.completed} />
         </div>
+
+        {/* Filter Tabs with Dynamic Categories */}
+        <FilterTabs
+          activeFilter={activeFilter}
+          setActiveFilter={setActiveFilter}
+          tasks={tasks}
+          dynamicCategories={dynamicCategories}
+        />
+
+        {/* Bulk Actions & Sort Controls Bar */}
+        <BulkActions
+          totalVisibleTasks={filteredAndSortedTasks.length}
+          selectedTaskIds={selectedTaskIds}
+          onSelectAll={selectAll}
+          onDeselectAll={deselectAll}
+          onBulkComplete={bulkComplete}
+          onBulkDeleteRequest={handleDeleteBulkRequest}
+          onClearCompleted={clearCompleted}
+          sortOption={sortOption}
+          setSortOption={setSortOption}
+          visibleTaskIds={visibleTaskIds}
+        />
+
+        {/* Main Task List with Drag & Drop and Subtasks */}
+        <TaskList
+          tasks={filteredAndSortedTasks}
+          searchQuery={searchQuery}
+          selectedTaskIds={selectedTaskIds}
+          onToggleSelect={toggleSelectTask}
+          onToggleComplete={toggleComplete}
+          onEditTask={editTask}
+          onDeleteRequest={handleDeleteSingleRequest}
+          onDuplicate={duplicateTask}
+          onTogglePin={togglePin}
+          onToggleFavorite={toggleFavorite}
+          onAddSubtask={addSubtask}
+          onToggleSubtask={toggleSubtask}
+          onDeleteSubtask={deleteSubtask}
+          onMoveTask={moveTask}
+          onShowToast={showToast}
+          onCreateFirstTask={handleFocusTaskInput}
+        />
+
+        {/* Footer */}
+        <Footer totalTasks={stats.total} completedTasks={stats.completed} />
       </div>
-
-      {/* Global Command Palette Overlay (Ctrl + K) */}
-      <CommandPalette
-        isOpen={isCommandPaletteOpen}
-        onClose={closeCommandPalette}
-        onOpenTaskModal={() => setIsTaskModalOpen(true)}
-        setActivePage={setActivePage}
-        toggleTheme={toggleTheme}
-        theme={theme}
-        onExport={() => exportTasksToJSON(tasks)}
-        onImportClick={() => fileInputRef.current?.click()}
-        onClearCompleted={clearCompleted}
-      />
-
-      {/* Task Creation Modal */}
-      <TaskCreationModal
-        isOpen={isTaskModalOpen}
-        onClose={() => setIsTaskModalOpen(false)}
-        onAddTask={addTask}
-        categories={dynamicCategories}
-      />
 
       {/* Delete Confirmation Modal */}
       <DeleteModal
@@ -309,7 +232,13 @@ export default function App() {
         count={deleteModalConfig.mode === 'bulk' ? selectedTaskIds.length : 1}
       />
 
-      {/* Toast Notifications Snackbar */}
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
+      />
+
+      {/* Notification Toast Snackbar */}
       <ToastSnackbar toast={toastMessage} onClose={clearToast} />
     </div>
   );
