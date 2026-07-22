@@ -8,12 +8,23 @@ export function Footer({ totalTasks, completedTasks }) {
     <footer className="w-full mt-auto pt-8 pb-6 border-t border-slate-200/60 dark:border-slate-800/80 text-xs text-slate-500 dark:text-slate-300 font-medium">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         {/* Left: App Version & Copyright */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
           <span className="font-extrabold text-slate-800 dark:text-slate-100">
             TaskFlow v1.0.0
           </span>
           <span>•</span>
-          <span>© {currentYear} All Rights Reserved</span>
+          <span>
+            © {currentYear}{' '}
+            <a
+              href="https://valluri-rahul-portfolio.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline transition-all"
+            >
+              VALLURI RAHUL
+            </a>
+            . All Rights Reserved
+          </span>
         </div>
 
         {/* Center: Live Task Stats */}
