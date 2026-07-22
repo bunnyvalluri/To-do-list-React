@@ -28,7 +28,8 @@ export function CalendarView({ tasks, onToggleComplete }) {
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
   return (
-    <div className="w-full glass-card p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 mb-8">
+    <div className="w-full glass-card p-4 sm:p-6 rounded-3xl border border-slate-200/70 dark:border-slate-800 mb-8 overflow-x-auto">
+      <div className="min-w-[550px]">
       {/* Calendar Month Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
@@ -121,6 +122,7 @@ export function CalendarView({ tasks, onToggleComplete }) {
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );
